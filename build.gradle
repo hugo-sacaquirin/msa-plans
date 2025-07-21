@@ -1,0 +1,82 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.3'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.openapi.generator' version '7.9.0'
+}
+
+group = 'com.sipeip'
+version = '0.0.1-SNAPSHOT'
+def packageName = "com.sipeip"
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation "org.springframework.boot:spring-boot-starter-validation"
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
+	annotationProcessor "org.mapstruct:mapstruct-processor:1.5.3.Final"
+	compileOnly "org.mapstruct:mapstruct:1.5.3.Final"
+	implementation("net.logstash.logback:logstash-logback-encoder:8.1")
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'org.postgresql:postgresql'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+tasks.register('buildSpringServer', GenerateTask) {
+	generatorName = "spring"
+	inputSpec = "$rootDir/src/main/resources/openapi.yaml".toString()
+	outputDir = "$buildDir/generated".toString()
+	apiPackage = "${packageName}.infrastructure.input.adapter.rest"
+	modelPackage = "${packageName}.infrastructure.input.adapter.rest.models"
+	library = "spring-boot"
+	configOptions = [
+			skipDefaultInterface                    : "true",
+			useSpringBoot3                          : "true",
+			useJakartaEe                            : "true",
+			serializableModel                       : "true",
+			dateLibrary                             : "java8",
+			openApiNullable                         : "false",
+			reactive                                : "false",
+			apiFirst                                : "false",
+			delegatePattern                         : "false",
+			configPackage                           : "${packageName}.config",
+			sourceFolder                            : "src/main/java",
+			basePackage                             : "${packageName}",
+			disallowAdditionalPropertiesIfNotPresent: "true",
+			interfaceOnly                           : "true"
+	]
+}
+
+compileJava {
+	dependsOn buildSpringServer
+	options.compilerArgs += [
+			"-Amapstruct.suppressGeneratorTimestamp=true",
+			"-Amapstruct.suppressGeneratorVersionInfoComment=true",
+			"-Amapstruct.verbose=true",
+			"-Amapstruct.defaultComponentModel=spring"
+	]
+}
+
+sourceSets.main.java.srcDirs = ["$buildDir/generated/src/main/java", "src/main/java"]

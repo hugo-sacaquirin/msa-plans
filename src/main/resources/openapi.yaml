@@ -1,0 +1,299 @@
+openapi: 3.0.3
+info:
+  title: Plan Management API
+  version: '1.0.0'
+  description: API for managing institutional plans, their objectives, programs, and versioning.
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: plans
+    description: Endpoints for institutional plan management
+
+paths:
+  /plans:
+    post:
+      tags:
+        - plans
+      summary: Register a new plan
+      operationId: createPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanRequest'
+      responses:
+        '201':
+          description: Plan successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanResultResponse'
+        '400':
+          description: Invalid data or duplicate (name, version)
+        '409':
+          description: Duplicate plan
+
+  /plans/paged:
+    get:
+      tags:
+        - plans
+      summary: Get paged plans
+      operationId: getPagedPlans
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: statusPlan
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paged plans list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanPagedResponse'
+
+  /plans/search:
+    get:
+      tags:
+        - plans
+      summary: Search plans by filters
+      operationId: searchPlans
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: name
+          in: query
+          schema: { type: string }
+        - name: version
+          in: query
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { type: string }
+        - name: statusPlan
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Plans found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanPagedResponse'
+
+  /plans/{id}:
+    put:
+      tags:
+        - plans
+      summary: Update a plan
+      operationId: updatePlan
+      parameters:
+        - $ref: '#/components/parameters/PlanId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanRequest'
+      responses:
+        '200':
+          description: Plan updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanResultResponse'
+        '400':
+          description: Invalid data
+        '404':
+          description: Plan not found
+        '409':
+          description: Duplicate plan
+
+    delete:
+      tags:
+        - plans
+      summary: Deactivate a plan (set status to 'inactive')
+      operationId: deactivatePlan
+      parameters:
+        - $ref: '#/components/parameters/PlanId'
+      responses:
+        '204':
+          description: Plan successfully deactivated
+        '404':
+          description: Plan not found
+
+  /plans/{id}/send-review:
+    post:
+      tags:
+        - plans
+      summary: Send plan for review
+      operationId: sendPlanForReview
+      parameters:
+        - $ref: '#/components/parameters/PlanId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanApprovalRequest'
+      responses:
+        '200':
+          description: Plan sent for review
+        '400':
+          description: Plan cannot be sent for review
+
+  /plans/pending-review/paged:
+    get:
+      tags:
+        - plans
+      summary: Get paged plans in 'In Review' state
+      operationId: getPagedPendingReviewPlans
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: statusPlan
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paged pending review plans
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanPagedResponse'
+
+  /plans/pending-review/search:
+    get:
+      tags:
+        - plans
+      summary: Search pending review plans by filters
+      operationId: searchPendingReviewPlans
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: name
+          in: query
+          schema: { type: string }
+        - name: version
+          in: query
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { type: string }
+        - name: statusPlan
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Pending review plans found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanPagedResponse'
+
+components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number (starts at 0)
+      schema: { type: integer, default: 0 }
+    Size:
+      name: size
+      in: query
+      description: Number of elements per page
+      schema: { type: integer, default: 20 }
+    PlanId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+      description: Plan ID
+
+  schemas:
+    PlanRequest:
+      type: object
+      required:
+        - name
+        - version
+        - periodStart
+        - periodEnd
+        - status
+        - planStatus
+        - institutionalObjectiveAlignmentIds
+        - programIds
+      properties:
+        id: { type: integer }
+        name: { type: string, minLength: 3, maxLength: 100 }
+        version: { type: string, minLength: 1, maxLength: 50 }
+        periodStart: { type: string }
+        periodEnd: { type: string }
+        planStatus: { type: string, minLength: 3, maxLength: 15 }
+        status: { type: string, minLength: 3, maxLength: 10 }
+        institutionalObjectiveAlignmentIds:
+          type: array
+          items: { type: integer }
+          description: List of alignment IDs (plan_objetivos_institucionales)
+        programIds:
+          type: array
+          items: { type: integer }
+          description: List of program IDs associated with this plan
+
+    PlanResultResponse:
+      type: object
+      properties:
+        code: { type: string }
+        result: { type: string }
+
+    PlanPagedResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanResponseSummary'
+
+    PlanApprovalRequest:
+      type: object
+      properties:
+        observations: { type: string }
+        status: { type: string }
+
+    PlanResponseSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        version: { type: string }
+        periodStart: { type: string }
+        periodEnd: { type: string }
+        planStatus: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+        institutionalObjectives:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstitutionalObjectivesSummary'
+        programs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgramSummary'
+    InstitutionalObjectivesSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        strategicObjective: { type: string }
+        pndObjective: { type: string }
+        odsObjective: { type: string }
+
+    ProgramSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        scope: { type: string }
