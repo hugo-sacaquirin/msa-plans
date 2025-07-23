@@ -20,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.sipeip.util.StaticValues.CREATED;
 
@@ -97,17 +99,19 @@ public class PlanServiceImpl implements PlanService {
     @Override
     public PlanPagedResponse getPagedPlan(Integer page, Integer size, String statusPlan) {
         PlanPagedResponse entityPagedResponse = new PlanPagedResponse();
-        entityPagedResponse.setContent(planMapper.toGoalResponseFromGoal(planRepository.findByPlanStatus(statusPlan)));
+        List<String> statusList = Arrays.asList(statusPlan.split("\\s*,\\s*"));
+        entityPagedResponse.setContent(planMapper.toGoalResponseFromGoal(planRepository.findByPlanStatusIn(statusList)));
         return entityPagedResponse;
     }
 
     @Override
     public PlanPagedResponse searchPlan(Integer page, Integer size, String name, String version, String type, String statusPlan) {
         PlanPagedResponse entityPagedResponse = new PlanPagedResponse();
+        List<String> statusList = Arrays.asList(statusPlan.split("\\s*,\\s*"));
         if (type.equals("0")) {
-            entityPagedResponse.setContent(planMapper.toGoalResponseFromGoal(planRepository.findByNameAndPlanStatus(name, statusPlan)));
+            entityPagedResponse.setContent(planMapper.toGoalResponseFromGoal(planRepository.findByNameAndPlanStatusIn(name, statusList)));
         } else {
-            entityPagedResponse.setContent(planMapper.toGoalResponseFromGoal(planRepository.findByVersionAndPlanStatus(version, statusPlan)));
+            entityPagedResponse.setContent(planMapper.toGoalResponseFromGoal(planRepository.findByVersionAndPlanStatusIn(version, statusList)));
         }
         return entityPagedResponse;
     }

@@ -11,11 +11,12 @@ import java.util.List;
 
 @Repository
 public interface PlanRepository extends JpaRepository<Plan, Integer> {
-    List<Plan> findByPlanStatus(String planStatus);
+    List<Plan> findByPlanStatusIn(List<String> planStatusList);
 
-    List<Plan> findByNameAndPlanStatus(String name, String planStatus);
+    List<Plan> findByNameAndPlanStatusIn(String name, List<String> planStatusList);
 
-    List<Plan> findByVersionAndPlanStatus(String version, String planStatus);
+    List<Plan> findByVersionAndPlanStatusIn(String version, List<String> planStatusList);
+
     @Modifying
     @Query(value = "UPDATE planes SET estado_plan = :estadoPlan, observacion = :observacion WHERE id_plan = :planId", nativeQuery = true)
     void updatePlanStatusAndObservation(@Param("estadoPlan") String statePlan,
